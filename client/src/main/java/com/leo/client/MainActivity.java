@@ -39,10 +39,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.bindBtn:
                 AIDLUtil.getInstance().bindService(MainActivity.this, new IRemoteCallback.Stub() {
                     @Override
-                    public void onSuccess(String func, String params) throws RemoteException {
+                    public void onSuccess(final String func, final String params) throws RemoteException {
                         Log.i("LEO", func + params);
-                        mResultTv.append("func：" + func + "\n");
-                        mResultTv.append("params：" + params + "\n");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mResultTv.append("func：" + func + "\n");
+                                mResultTv.append("params：" + params + "\n");
+                            }
+                        });
                     }
 
                     @Override
