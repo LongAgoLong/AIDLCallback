@@ -8,7 +8,7 @@ interface IRemoteService {
      * Demonstrates some basic types that you can use as parameters
      * and return values in AIDL.
      */
-     void register(IRemoteCallback callback);
-     void unRegister(IRemoteCallback callback);
-     void send(String packageName,String func, String params);
+     void register(in String pkgName,in IRemoteCallback callback);
+     void unRegister(in String pkgName,in IRemoteCallback callback);
+     void send(in String packageName,in String func,in String params);
 }

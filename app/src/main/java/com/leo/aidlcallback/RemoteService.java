@@ -2,83 +2,91 @@ package com.leo.aidlcallback;
 
 import android.app.Service;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 public class RemoteService extends Service {
-    private RemoteCallbackList<IRemoteCallback> mCallbacks;
-    private Handler handler;
+    private HashMap<String, IRemoteCallback> mHashMap;
 
     public RemoteService() {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        mCallbacks = new RemoteCallbackList<>();
-        handler = new Handler();
+    public void onCreate() {
+        super.onCreate();
+        mHashMap = new HashMap<>();
         push();
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
         return stub;
     }
 
     IRemoteService.Stub stub = new IRemoteService.Stub() {
         @Override
-        public void register(IRemoteCallback callback) throws RemoteException {
+        public void register(String pkgName, IRemoteCallback callback) throws RemoteException {
             if (null == callback) {
                 return;
             }
             Log.i("LEO", "注册回调");
-            mCallbacks.register(callback);
+            callback.asBinder().linkToDeath(new PkgDeathRecipient(pkgName) {
+                @Override
+                public void binderDied() {
+                    super.binderDied();
+                    // 设置死亡代理，进程意外挂掉等移除callback
+                    IRemoteCallback iRemoteCallback = mHashMap.get(getPkgName());
+                    if (null != iRemoteCallback) {
+                        iRemoteCallback.asBinder().unlinkToDeath(this, 0);
+                    }
+                    mHashMap.remove(getPkgName());
+                }
+            }, 0);
+            mHashMap.put(pkgName, callback);
         }
 
         @Override
-        public void unRegister(IRemoteCallback callback) throws RemoteException {
+        public void unRegister(String pkgName, IRemoteCallback callback) throws RemoteException {
             if (null == callback) {
                 return;
             }
             Log.i("LEO", "反注册回调");
-            mCallbacks.unregister(callback);
+            mHashMap.remove(pkgName);
         }
 
         @Override
         public void send(String packageName, final String func, String params) throws RemoteException {
-            Log.i("LEO", "接收到请求step0");
             if (TextUtils.isEmpty(func)) {
                 return;
             }
-            switch (func) {
-                case "test":
-                    Log.i("LEO", "接收到请求step1");
-                    break;
+            IRemoteCallback iRemoteCallback = mHashMap.get(packageName);
+            if (null != iRemoteCallback) {
+                iRemoteCallback.onSuccess(func, "收到请求啦，给你返回来的数据请接收");
             }
         }
     };
 
-    private void push(){
-        new Thread(){
+    private void push() {
+        new Thread() {
             @Override
             public void run() {
                 super.run();
                 while (true) {
-                    // 以广播的方式进行客户端回调
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            int len = mCallbacks.beginBroadcast();
-                            for (int i = 0; i < len; i++) {
-                                try {
-                                    mCallbacks.getBroadcastItem(i).onSuccess("push", "接口回调回来的数据" + System.currentTimeMillis());
-                                } catch (RemoteException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            // 记得要关闭广播
-                            mCallbacks.finishBroadcast();
+                    Set<Map.Entry<String, IRemoteCallback>> entries = mHashMap.entrySet();
+                    for (Map.Entry<String, IRemoteCallback> entry : entries) {
+                        try {
+                            entry.getValue().onSuccess("push",
+                                    "接口主动推送的数据" + System.currentTimeMillis());
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
                         }
-                    });
+                    }
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {

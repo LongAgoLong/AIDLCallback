@@ -19,6 +19,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ContextHelp.setContext(this);
         setContentView(R.layout.activity_main);
         initView();
     }
@@ -64,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mResultTv.append("\n");
                 break;
             case R.id.requestBtn:
-                AIDLUtil.getInstance().send(MainActivity.this);
+                AIDLUtil.getInstance().send();
                 break;
         }
     }

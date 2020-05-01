@@ -37,7 +37,9 @@ public class AIDLUtil {
             Log.i("LEO", "绑定成功");
             iRemoteService = IRemoteService.Stub.asInterface(service);
             try {
-                iRemoteService.register(iRemoteCallback);
+                // 设置死亡代理，服务意外挂掉才能回调onServiceDisconnected
+                iRemoteService.asBinder().linkToDeath(deathRecipient, 0);
+                iRemoteService.register(ContextHelp.getContext().getPackageName(), iRemoteCallback);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -45,8 +47,18 @@ public class AIDLUtil {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            if (null != iRemoteService) {
+                iRemoteService.asBinder().unlinkToDeath(deathRecipient, 0);
+            }
             iRemoteService = null;
             iRemoteCallback = null;
+        }
+    };
+
+    private IBinder.DeathRecipient deathRecipient = new IBinder.DeathRecipient() {
+        @Override
+        public void binderDied() {
+
         }
     };
 
@@ -62,8 +74,8 @@ public class AIDLUtil {
             return;
         }
         try {
-            if (null!=iRemoteCallback){
-                iRemoteService.unRegister(iRemoteCallback);
+            if (null != iRemoteCallback) {
+                iRemoteService.unRegister(ContextHelp.getContext().getPackageName(), iRemoteCallback);
             }
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -73,12 +85,12 @@ public class AIDLUtil {
         iRemoteCallback = null;
     }
 
-    public void send(Context context) {
+    public void send() {
         if (null == iRemoteService) {
             return;
         }
         try {
-            iRemoteService.send(context.getPackageName(), "test", "");
+            iRemoteService.send(ContextHelp.getContext().getPackageName(), "test", "");
         } catch (RemoteException e) {
             e.printStackTrace();
         }
