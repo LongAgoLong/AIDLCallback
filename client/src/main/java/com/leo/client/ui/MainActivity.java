@@ -2,7 +2,6 @@ package com.leo.client.ui;
 
 import android.os.Bundle;
 import android.os.RemoteException;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -10,9 +9,9 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.leo.aidlcallback.IRemoteCallback;
+import com.leo.client.R;
 import com.leo.client.util.BridgeManager;
 import com.leo.client.util.ContextHelp;
-import com.leo.client.R;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private Button mBindBtn;
@@ -47,7 +46,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         new IRemoteCallback.Stub() {
                             @Override
                             public void onSuccess(final String func, final String params) throws RemoteException {
-                                Log.i("LEO", func + params);
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
