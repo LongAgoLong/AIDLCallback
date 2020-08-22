@@ -2,17 +2,26 @@ package com.leo.aidlcallback;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 public class RemoteService extends Service {
     private HashMap<String, IRemoteCallback> mHashMap;
+    private Handler sendHandler;
+    private Handler receiveHandler;
 
     public RemoteService() {
     }
@@ -21,7 +30,69 @@ public class RemoteService extends Service {
     public void onCreate() {
         super.onCreate();
         mHashMap = new HashMap<>();
+        initSendHandler();
+        initReceiveHandler();
+
         push();
+    }
+
+    private void initReceiveHandler() {
+        HandlerThread receiveThread = new HandlerThread("receive-thread");
+        receiveThread.start();
+        receiveHandler = new Handler(receiveThread.getLooper(), new Handler.Callback() {
+            @Override
+            public boolean handleMessage(Message message) {
+                Bundle data = message.getData();
+                String packageName = data.getString("packageName", "");
+                String func = data.getString("func", "");
+                String params = data.getString("params", "");
+                try {
+                    IRemoteCallback iRemoteCallback = mHashMap.get(packageName);
+                    if (null != iRemoteCallback) {
+                        iRemoteCallback.onSuccess(func, "收到请求啦，给你返回来的数据请接收");
+                    }
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+                return true;
+            }
+        });
+    }
+
+    private void initSendHandler() {
+        HandlerThread sendThread = new HandlerThread("send-thread");
+        sendThread.start();
+        sendHandler = new Handler(sendThread.getLooper(), new Handler.Callback() {
+            @Override
+            public boolean handleMessage(Message message) {
+                Bundle data = message.getData();
+                String packageName = data.getString("packageName", "");
+                String func = data.getString("func", "");
+                String params = data.getString("params", "");
+                if (TextUtils.isEmpty(func)) {
+                    return true;
+                }
+                try {
+                    if (!TextUtils.isEmpty(packageName)) {
+                        if (mHashMap.containsKey(packageName)) {
+                            IRemoteCallback iRemoteCallback = mHashMap.get(packageName);
+                            if (null == iRemoteCallback) {
+                                return true;
+                            }
+                            iRemoteCallback.onSuccess(func, params);
+                        }
+                    } else {
+                        Set<Map.Entry<String, IRemoteCallback>> entries = mHashMap.entrySet();
+                        for (Map.Entry<String, IRemoteCallback> entry : entries) {
+                            entry.getValue().onSuccess(func, params);
+                        }
+                    }
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+                return true;
+            }
+        });
     }
 
     @Override
@@ -35,7 +106,9 @@ public class RemoteService extends Service {
             if (null == callback) {
                 return;
             }
-            Log.i("LEO", "注册回调");
+            if (mHashMap.containsKey(pkgName)) {
+                return;
+            }
             callback.asBinder().linkToDeath(new PkgDeathRecipient(pkgName) {
                 @Override
                 public void binderDied() {
@@ -65,10 +138,13 @@ public class RemoteService extends Service {
             if (TextUtils.isEmpty(func)) {
                 return;
             }
-            IRemoteCallback iRemoteCallback = mHashMap.get(packageName);
-            if (null != iRemoteCallback) {
-                iRemoteCallback.onSuccess(func, "收到请求啦，给你返回来的数据请接收");
-            }
+            Message message = receiveHandler.obtainMessage();
+            Bundle bundle = new Bundle();
+            bundle.putString("packageName", packageName);
+            bundle.putString("func", func);
+            bundle.putString("params", params);
+            message.setData(bundle);
+            receiveHandler.sendMessage(message);
         }
     };
 
@@ -78,15 +154,16 @@ public class RemoteService extends Service {
             public void run() {
                 super.run();
                 while (true) {
-                    Set<Map.Entry<String, IRemoteCallback>> entries = mHashMap.entrySet();
-                    for (Map.Entry<String, IRemoteCallback> entry : entries) {
-                        try {
-                            entry.getValue().onSuccess("push",
-                                    "接口主动推送的数据" + System.currentTimeMillis());
-                        } catch (RemoteException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss", Locale.CHINA);
+                    String format = sdf.format(new Date(System.currentTimeMillis()));
+
+                    Message message = sendHandler.obtainMessage();
+                    Bundle bundle = new Bundle();
+                    bundle.putString("packageName", "");
+                    bundle.putString("func", "push");
+                    bundle.putString("params", format + ":接口主动推送的数据");
+                    message.setData(bundle);
+                    sendHandler.sendMessage(message);
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {

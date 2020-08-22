@@ -1,7 +1,9 @@
 package com.leo.client;
 
 import android.os.RemoteException;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -45,8 +47,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                mResultTv.append("func：" + func + "\n");
-                                mResultTv.append("params：" + params + "\n");
+                                mResultTv.append("func：" + func + ";params：" + params + "\n");
                             }
                         });
                     }
@@ -56,13 +57,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     }
                 });
-                mResultTv.append("绑定服务");
-                mResultTv.append("\n");
+                mResultTv.append("绑定服务\n");
                 break;
             case R.id.unbindBtn:
                 AIDLUtil.getInstance().unbindService(MainActivity.this);
-                mResultTv.append("取消绑定");
-                mResultTv.append("\n");
+                mResultTv.append("取消绑定\n");
                 break;
             case R.id.requestBtn:
                 AIDLUtil.getInstance().send();
