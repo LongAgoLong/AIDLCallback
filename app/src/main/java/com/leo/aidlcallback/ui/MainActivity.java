@@ -1,7 +1,9 @@
-package com.leo.aidlcallback;
+package com.leo.aidlcallback.ui;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+
+import com.leo.aidlcallback.R;
 
 public class MainActivity extends AppCompatActivity {
 

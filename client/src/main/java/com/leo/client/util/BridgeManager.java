@@ -1,4 +1,4 @@
-package com.leo.client;
+package com.leo.client.util;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -13,18 +13,16 @@ import android.os.RemoteException;
 
 import androidx.annotation.NonNull;
 
-import android.util.Log;
-
 import com.leo.aidlcallback.IRemoteCallback;
 import com.leo.aidlcallback.IRemoteService;
 
-public class AIDLUtil {
-    private static AIDLUtil aidlUtil;
+public class BridgeManager {
+    private static BridgeManager bridgeManager;
     private IRemoteService iRemoteService;
     private IRemoteCallback iRemoteCallback;
     private final Handler sendHandler;
 
-    private AIDLUtil() {
+    private BridgeManager() {
         HandlerThread sendThread = new HandlerThread("client-send-thread");
         sendThread.start();
         sendHandler = new Handler(sendThread.getLooper(), new Handler.Callback() {
@@ -46,21 +44,20 @@ public class AIDLUtil {
         });
     }
 
-    public static AIDLUtil getInstance() {
-        if (null == aidlUtil) {
-            synchronized (AIDLUtil.class) {
-                if (null == aidlUtil) {
-                    aidlUtil = new AIDLUtil();
+    public static BridgeManager getInstance() {
+        if (null == bridgeManager) {
+            synchronized (BridgeManager.class) {
+                if (null == bridgeManager) {
+                    bridgeManager = new BridgeManager();
                 }
             }
         }
-        return aidlUtil;
+        return bridgeManager;
     }
 
     private ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.i("LEO", "绑定成功");
             iRemoteService = IRemoteService.Stub.asInterface(service);
             try {
                 // 设置死亡代理，服务意外挂掉才能回调onServiceDisconnected
@@ -88,10 +85,11 @@ public class AIDLUtil {
         }
     };
 
-    public void bindService(Context context, @NonNull IRemoteCallback iRemoteCallback) {
+    public void bindService(Context context, @NonNull String pkgName, @NonNull String action,
+                            @NonNull IRemoteCallback iRemoteCallback) {
         this.iRemoteCallback = iRemoteCallback;
-        Intent intent = new Intent("com.leo.aidlTest");
-        intent.setPackage("com.leo.aidlcallback");
+        Intent intent = new Intent(action);
+        intent.setPackage(pkgName);
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
 
@@ -108,7 +106,7 @@ public class AIDLUtil {
         iRemoteCallback = null;
     }
 
-    public void send() {
+    public void send(@NonNull String func, @NonNull String params) {
         Message message = sendHandler.obtainMessage();
         Bundle bundle = new Bundle();
         bundle.putString("func", "test");

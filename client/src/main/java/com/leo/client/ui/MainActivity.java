@@ -1,16 +1,18 @@
-package com.leo.client;
-
-import android.os.RemoteException;
-
-import androidx.appcompat.app.AppCompatActivity;
+package com.leo.client.ui;
 
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.leo.aidlcallback.IRemoteCallback;
+import com.leo.client.util.BridgeManager;
+import com.leo.client.util.ContextHelp;
+import com.leo.client.R;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private Button mBindBtn;
@@ -40,31 +42,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.bindBtn:
-                AIDLUtil.getInstance().bindService(MainActivity.this, new IRemoteCallback.Stub() {
-                    @Override
-                    public void onSuccess(final String func, final String params) throws RemoteException {
-                        Log.i("LEO", func + params);
-                        runOnUiThread(new Runnable() {
+                BridgeManager.getInstance().bindService(MainActivity.this,
+                        "com.leo.aidlcallback", "com.leo.aidlTest",
+                        new IRemoteCallback.Stub() {
                             @Override
-                            public void run() {
-                                mResultTv.append("func：" + func + ";params：" + params + "\n");
+                            public void onSuccess(final String func, final String params) throws RemoteException {
+                                Log.i("LEO", func + params);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mResultTv.append("func：" + func + ";params：" + params + "\n");
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(String func, int errorCode) throws RemoteException {
+
                             }
                         });
-                    }
-
-                    @Override
-                    public void onError(String func, int errorCode) throws RemoteException {
-
-                    }
-                });
                 mResultTv.append("绑定服务\n");
                 break;
             case R.id.unbindBtn:
-                AIDLUtil.getInstance().unbindService(MainActivity.this);
+                BridgeManager.getInstance().unbindService(MainActivity.this);
                 mResultTv.append("取消绑定\n");
                 break;
             case R.id.requestBtn:
-                AIDLUtil.getInstance().send();
+                BridgeManager.getInstance().send("test", "");
                 break;
         }
     }

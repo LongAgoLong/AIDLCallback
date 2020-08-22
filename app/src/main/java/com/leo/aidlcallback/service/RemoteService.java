@@ -1,4 +1,4 @@
-package com.leo.aidlcallback;
+package com.leo.aidlcallback.service;
 
 import android.app.Service;
 import android.content.Intent;
@@ -9,7 +9,9 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
-import android.util.Log;
+
+import com.leo.aidlcallback.IRemoteCallback;
+import com.leo.aidlcallback.IRemoteService;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -34,6 +36,84 @@ public class RemoteService extends Service {
         initReceiveHandler();
 
         push();
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return stub;
+    }
+
+    IRemoteService.Stub stub = new IRemoteService.Stub() {
+        @Override
+        public void register(String pkgName, IRemoteCallback callback) throws RemoteException {
+            if (null == callback) {
+                return;
+            }
+            if (mHashMap.containsKey(pkgName)) {
+                return;
+            }
+            callback.asBinder().linkToDeath(new PkgDeathRecipient(pkgName) {
+                @Override
+                public void binderDied() {
+                    super.binderDied();
+                    // 设置死亡代理，进程意外挂掉等移除callback
+                    IRemoteCallback iRemoteCallback = mHashMap.get(getPkgName());
+                    if (null != iRemoteCallback) {
+                        iRemoteCallback.asBinder().unlinkToDeath(this, 0);
+                    }
+                    mHashMap.remove(getPkgName());
+                }
+            }, 0);
+            mHashMap.put(pkgName, callback);
+        }
+
+        @Override
+        public void unRegister(String pkgName, IRemoteCallback callback) throws RemoteException {
+            if (null == callback) {
+                return;
+            }
+            mHashMap.remove(pkgName);
+        }
+
+        @Override
+        public void send(String packageName, final String func, String params) throws RemoteException {
+            if (TextUtils.isEmpty(func)) {
+                return;
+            }
+            Message message = receiveHandler.obtainMessage();
+            Bundle bundle = new Bundle();
+            bundle.putString("packageName", packageName);
+            bundle.putString("func", func);
+            bundle.putString("params", params);
+            message.setData(bundle);
+            receiveHandler.sendMessage(message);
+        }
+    };
+
+    private void push() {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                while (true) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss", Locale.CHINA);
+                    String format = sdf.format(new Date(System.currentTimeMillis()));
+
+                    Message message = sendHandler.obtainMessage();
+                    Bundle bundle = new Bundle();
+                    bundle.putString("packageName", "");
+                    bundle.putString("func", "push");
+                    bundle.putString("params", format + ":接口主动推送的数据");
+                    message.setData(bundle);
+                    sendHandler.sendMessage(message);
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }.start();
     }
 
     private void initReceiveHandler() {
@@ -93,84 +173,5 @@ public class RemoteService extends Service {
                 return true;
             }
         });
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return stub;
-    }
-
-    IRemoteService.Stub stub = new IRemoteService.Stub() {
-        @Override
-        public void register(String pkgName, IRemoteCallback callback) throws RemoteException {
-            if (null == callback) {
-                return;
-            }
-            if (mHashMap.containsKey(pkgName)) {
-                return;
-            }
-            callback.asBinder().linkToDeath(new PkgDeathRecipient(pkgName) {
-                @Override
-                public void binderDied() {
-                    super.binderDied();
-                    // 设置死亡代理，进程意外挂掉等移除callback
-                    IRemoteCallback iRemoteCallback = mHashMap.get(getPkgName());
-                    if (null != iRemoteCallback) {
-                        iRemoteCallback.asBinder().unlinkToDeath(this, 0);
-                    }
-                    mHashMap.remove(getPkgName());
-                }
-            }, 0);
-            mHashMap.put(pkgName, callback);
-        }
-
-        @Override
-        public void unRegister(String pkgName, IRemoteCallback callback) throws RemoteException {
-            if (null == callback) {
-                return;
-            }
-            Log.i("LEO", "反注册回调");
-            mHashMap.remove(pkgName);
-        }
-
-        @Override
-        public void send(String packageName, final String func, String params) throws RemoteException {
-            if (TextUtils.isEmpty(func)) {
-                return;
-            }
-            Message message = receiveHandler.obtainMessage();
-            Bundle bundle = new Bundle();
-            bundle.putString("packageName", packageName);
-            bundle.putString("func", func);
-            bundle.putString("params", params);
-            message.setData(bundle);
-            receiveHandler.sendMessage(message);
-        }
-    };
-
-    private void push() {
-        new Thread() {
-            @Override
-            public void run() {
-                super.run();
-                while (true) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss", Locale.CHINA);
-                    String format = sdf.format(new Date(System.currentTimeMillis()));
-
-                    Message message = sendHandler.obtainMessage();
-                    Bundle bundle = new Bundle();
-                    bundle.putString("packageName", "");
-                    bundle.putString("func", "push");
-                    bundle.putString("params", format + ":接口主动推送的数据");
-                    message.setData(bundle);
-                    sendHandler.sendMessage(message);
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }.start();
     }
 }

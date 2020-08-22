@@ -1,4 +1,4 @@
-package com.leo.aidlcallback;
+package com.leo.aidlcallback.service;
 
 import android.os.IBinder;
 
