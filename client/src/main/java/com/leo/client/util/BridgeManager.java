@@ -109,8 +109,8 @@ public class BridgeManager {
     public void send(@NonNull String func, @NonNull String params) {
         Message message = sendHandler.obtainMessage();
         Bundle bundle = new Bundle();
-        bundle.putString("func", "test");
-        bundle.putString("params", "");
+        bundle.putString("func", func);
+        bundle.putString("params", params);
         message.setData(bundle);
         sendHandler.sendMessage(message);
     }
