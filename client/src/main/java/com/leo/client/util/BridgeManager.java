@@ -17,7 +17,6 @@ import com.leo.aidlcallback.IRemoteCallback;
 import com.leo.aidlcallback.IRemoteService;
 
 public class BridgeManager {
-    private static BridgeManager bridgeManager;
     private IRemoteService iRemoteService;
     private IRemoteCallback iRemoteCallback;
     private final Handler sendHandler;
@@ -45,17 +44,14 @@ public class BridgeManager {
     }
 
     public static BridgeManager getInstance() {
-        if (null == bridgeManager) {
-            synchronized (BridgeManager.class) {
-                if (null == bridgeManager) {
-                    bridgeManager = new BridgeManager();
-                }
-            }
-        }
-        return bridgeManager;
+        return InstanceHolder.INSTANCE;
     }
 
-    private ServiceConnection connection = new ServiceConnection() {
+    private static class InstanceHolder {
+        public static final BridgeManager INSTANCE = new BridgeManager();
+    }
+
+    private final ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             iRemoteService = IRemoteService.Stub.asInterface(service);
@@ -78,7 +74,7 @@ public class BridgeManager {
         }
     };
 
-    private IBinder.DeathRecipient deathRecipient = new IBinder.DeathRecipient() {
+    private final IBinder.DeathRecipient deathRecipient = new IBinder.DeathRecipient() {
         @Override
         public void binderDied() {
 
