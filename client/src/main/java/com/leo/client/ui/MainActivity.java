@@ -2,6 +2,7 @@ package com.leo.client.ui;
 
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -16,7 +17,8 @@ import com.leo.client.util.ContextHelp;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private Button mBindBtn;
     private Button mUnbindBtn;
-    private Button mRequestBtn;
+    private Button mAsynRequestBtn;
+    private Button mSyncRequestBtn;
     private TextView mResultTv;
 
     @Override
@@ -32,8 +34,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBindBtn.setOnClickListener(this);
         mUnbindBtn = findViewById(R.id.unbindBtn);
         mUnbindBtn.setOnClickListener(this);
-        mRequestBtn = findViewById(R.id.requestBtn);
-        mRequestBtn.setOnClickListener(this);
+        mAsynRequestBtn = findViewById(R.id.asynRequestBtn);
+        mAsynRequestBtn.setOnClickListener(this);
+        mSyncRequestBtn = findViewById(R.id.syncRequestBtn);
+        mSyncRequestBtn.setOnClickListener(this);
         mResultTv = findViewById(R.id.resultTv);
     }
 
@@ -65,8 +69,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 BridgeManager.getInstance().unbindService(MainActivity.this);
                 mResultTv.append("取消绑定\n");
                 break;
-            case R.id.requestBtn:
+            case R.id.asynRequestBtn:
+                // 异步
                 BridgeManager.getInstance().send("test", "");
+                break;
+            case R.id.syncRequestBtn:
+                // 同步
+                String syncRequest = BridgeManager.getInstance().fetch("syncRequest");
+                if (!TextUtils.isEmpty(syncRequest)) {
+                    mResultTv.append(syncRequest);
+                }
                 break;
         }
     }

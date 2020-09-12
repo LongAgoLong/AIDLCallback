@@ -23,12 +23,20 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/requestBtn"
+        android:id="@+id/asynRequestBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="发送请求"
-        app:layout_constraintLeft_toRightOf="@+id/unbindBtn"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="发送异步请求"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bindBtn" />
+
+    <Button
+        android:id="@+id/syncRequestBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="发送同步请求"
+        app:layout_constraintLeft_toRightOf="@+id/asynRequestBtn"
+        app:layout_constraintTop_toTopOf="@+id/asynRequestBtn" />
 
     <ScrollView
         android:layout_width="0dp"
@@ -36,7 +44,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/bindBtn">
+        app:layout_constraintTop_toBottomOf="@+id/asynRequestBtn">
 
         <TextView
             android:id="@+id/resultTv"

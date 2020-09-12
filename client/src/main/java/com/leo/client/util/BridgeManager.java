@@ -110,4 +110,15 @@ public class BridgeManager {
         message.setData(bundle);
         sendHandler.sendMessage(message);
     }
+
+    public String fetch(@NonNull String func) {
+        try {
+            if (null != iRemoteService) {
+                return iRemoteService.fetch(ContextHelp.getContext().getPackageName(), func);
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

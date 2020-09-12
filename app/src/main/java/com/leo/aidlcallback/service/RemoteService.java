@@ -13,6 +13,9 @@ import android.text.TextUtils;
 import com.leo.aidlcallback.IRemoteCallback;
 import com.leo.aidlcallback.IRemoteService;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -88,32 +91,48 @@ public class RemoteService extends Service {
             message.setData(bundle);
             receiveHandler.sendMessage(message);
         }
+
+        @Override
+        public String fetch(String packageName, String func) throws RemoteException {
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("func", func);
+                jsonObject.put("result", "主动获取的结果：" + System.currentTimeMillis());
+                return jsonObject.toString();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     };
 
     private void push() {
-        new Thread() {
-            @Override
-            public void run() {
-                super.run();
-                while (true) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss", Locale.CHINA);
-                    String format = sdf.format(new Date(System.currentTimeMillis()));
+        PushThread pushThread = new PushThread();
+        pushThread.start();
+    }
 
-                    Message message = sendHandler.obtainMessage();
-                    Bundle bundle = new Bundle();
-                    bundle.putString("packageName", "");
-                    bundle.putString("func", "push");
-                    bundle.putString("params", format + ":接口主动推送的数据");
-                    message.setData(bundle);
-                    sendHandler.sendMessage(message);
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+    private class PushThread extends Thread {
+        @Override
+        public void run() {
+            super.run();
+            while (true) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss", Locale.CHINA);
+                String format = sdf.format(new Date(System.currentTimeMillis()));
+
+                Message message = sendHandler.obtainMessage();
+                Bundle bundle = new Bundle();
+                bundle.putString("packageName", "");
+                bundle.putString("func", "push");
+                bundle.putString("params", format + ":接口主动推送的数据");
+                message.setData(bundle);
+                sendHandler.sendMessage(message);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-        }.start();
+        }
     }
 
     private void initReceiveHandler() {
