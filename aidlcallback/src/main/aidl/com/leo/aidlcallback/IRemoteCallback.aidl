@@ -8,6 +8,6 @@ interface IRemoteCallback {
      * Demonstrates some basic types that you can use as parameters
      * and return values in AIDL.
      */
-    void onSuccess(String func, String params);
-    void onError(String func, int errorCode);
+    void onReceiver(in String func,in int code,in String params);
+    String fetch(in String func);
 }

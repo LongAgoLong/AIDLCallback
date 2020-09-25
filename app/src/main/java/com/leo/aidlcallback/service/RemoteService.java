@@ -148,7 +148,7 @@ public class RemoteService extends Service {
                 try {
                     IRemoteCallback iRemoteCallback = mHashMap.get(packageName);
                     if (null != iRemoteCallback) {
-                        iRemoteCallback.onSuccess(func, "收到请求啦，给你返回来的数据请接收");
+                        iRemoteCallback.onReceiver(func, 0, "收到请求啦，给你返回来的数据请接收");
                     }
                 } catch (RemoteException e) {
                     e.printStackTrace();
@@ -178,12 +178,12 @@ public class RemoteService extends Service {
                             if (null == iRemoteCallback) {
                                 return true;
                             }
-                            iRemoteCallback.onSuccess(func, params);
+                            iRemoteCallback.onReceiver(func, 0, params);
                         }
                     } else {
                         Set<Map.Entry<String, IRemoteCallback>> entries = mHashMap.entrySet();
                         for (Map.Entry<String, IRemoteCallback> entry : entries) {
-                            entry.getValue().onSuccess(func, params);
+                            entry.getValue().onReceiver(func, 0, params);
                         }
                     }
                 } catch (RemoteException e) {

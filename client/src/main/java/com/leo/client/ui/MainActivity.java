@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         "com.leo.aidlcallback", "com.leo.aidlTest",
                         new IRemoteCallback.Stub() {
                             @Override
-                            public void onSuccess(final String func, final String params) throws RemoteException {
+                            public void onReceiver(final String func, int code, final String params) throws RemoteException {
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -59,8 +59,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             }
 
                             @Override
-                            public void onError(String func, int errorCode) throws RemoteException {
-
+                            public String fetch(String func) throws RemoteException {
+                                return null;
                             }
                         });
                 mResultTv.append("绑定服务\n");
